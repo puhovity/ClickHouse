@@ -176,7 +176,7 @@ protected:
         if (inserted)
         {
             if constexpr (has_mapped)
-                static_cast<Derived &>(*this).onNewKey(it->second, pool);
+                static_cast<Derived &>(*this).onNewKey(it->first, pool);
             else
                 static_cast<Derived &>(*this).onNewKey(*it, pool);
         }
