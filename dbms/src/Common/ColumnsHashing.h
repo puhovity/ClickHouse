@@ -88,6 +88,8 @@ struct HashMethodString
     static StringRef getValueRef(const Value & value) { return StringRef(value.first.data, value.first.size); }
 
 protected:
+    friend class columns_hashing_impl::HashMethodBase<Self, Value, Mapped, use_cache>;
+
     static ALWAYS_INLINE void onNewKey(StringRef & key, Arena & pool)
     {
         if (key.size)
@@ -120,6 +122,7 @@ struct HashMethodFixedString
     static StringRef getValueRef(const Value & value) { return StringRef(value.first.data, value.first.size); }
 
 protected:
+    friend class columns_hashing_impl::HashMethodBase<Self, Value, Mapped, use_cache>;
     static ALWAYS_INLINE void onNewKey(StringRef & key, Arena & pool) { key.data = pool.insert(key.data, key.size); }
 };
 
