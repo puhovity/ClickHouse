@@ -304,9 +304,9 @@ struct HashMethodSingleLowCardinalityColumn : public SingleColumnMethod
     }
 
     /// Get the key from the key columns for insertion into the hash table.
-    ALWAYS_INLINE auto getKey(size_t row) const
+    ALWAYS_INLINE auto getKey(size_t row, Arena & pool) const
     {
-        return Base::getKey(getIndexAt(row));
+        return Base::getKey(getIndexAt(row), pool);
     }
 
     template <typename Data>
@@ -334,7 +334,7 @@ struct HashMethodSingleLowCardinalityColumn : public SingleColumnMethod
                 return EmplaceResult(false);
         }
 
-        auto key = getKey(row_);
+        auto key = getKey(row_, pool);
 
         bool inserted = false;
         typename Data::iterator it;
@@ -363,7 +363,7 @@ struct HashMethodSingleLowCardinalityColumn : public SingleColumnMethod
     }
 
     template <typename Data>
-    ALWAYS_INLINE FindResult findFromRow(Data & data, size_t row_, Arena &)
+    ALWAYS_INLINE FindResult findFromRow(Data & data, size_t row_, Arena & pool)
     {
         size_t row = getIndexAt(row_);
 
@@ -383,7 +383,7 @@ struct HashMethodSingleLowCardinalityColumn : public SingleColumnMethod
                 return FindResult(visit_cache[row] == VisitValue::Found);
         }
 
-        auto key = getKey(row_);
+        auto key = getKey(row_, pool);
 
         typename Data::iterator it;
         if (saved_hash)
