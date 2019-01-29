@@ -97,8 +97,9 @@ public:
 };
 
 template <typename Derived, typename Value, typename Mapped, bool consecutive_keys_optimization>
-struct HashMethodBase
+class HashMethodBase
 {
+public:
     using EmplaceResult = EmplaceResultImpl<Mapped>;
     using FindResult = FindResultImpl<Mapped>;
     static constexpr bool has_mapped = !std::is_same<Mapped, void>::value;
