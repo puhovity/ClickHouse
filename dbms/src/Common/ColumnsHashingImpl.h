@@ -107,21 +107,27 @@ struct HashMethodBase
     static HashMethodContextPtr createContext(const HashMethodContext::Settings &) { return nullptr; }
 
     template <typename Data>
-    ALWAYS_INLINE EmplaceResult emplaceKey(Data & data, size_t row, Arena & /*pool*/)
+    ALWAYS_INLINE EmplaceResult emplaceKey(Data & data, size_t row, Arena & pool)
     {
-        return emplaceKeyImpl(Derived::getKey(row), data);
+        return emplaceKeyImpl(static_cast<Derived &>(*this).getKey(row), data, pool);
     }
 
     template <typename Data>
-    ALWAYS_INLINE FindResult findKey(Data & data, size_t row, Arena & /*pool*/)
+    ALWAYS_INLINE FindResult findKey(Data & data, size_t row, Arena & pool)
     {
-        return findKeyImpl(Derived::getKey(row), data);
+        auto key = static_cast<Derived &>(*this).getKey(row);
+        auto res = findKeyImpl(key, data);
+        static_cast<Derived &>(*this).onExistingKey(key, pool);
+        return res;
     }
 
     template <typename Data>
-    ALWAYS_INLINE size_t getHash(const Data & data, size_t row, Arena & /*pool*/)
+    ALWAYS_INLINE size_t getHash(const Data & data, size_t row, Arena & pool)
     {
-        return data.hash(Derived::getKey(row));
+        auto key = static_cast<Derived &>(*this).getKey(row);
+        auto res = data.hash(key);
+        static_cast<Derived &>(*this).onExistingKey(key, pool);
+        return res;
     }
 
 protected:
@@ -138,8 +144,10 @@ protected:
         }
     }
 
-    static ALWAYS_INLINE void onNewKey(Value & /*value*/, Arena & /*pool*/) {}
-    static ALWAYS_INLINE void onExistingKey(Value & /*value*/, Arena & /*pool*/) {}
+    template <typename Key>
+    static ALWAYS_INLINE void onNewKey(Key & /*key*/, Arena & /*pool*/) {}
+    template <typename Key>
+    static ALWAYS_INLINE void onExistingKey(Key & /*key*/, Arena & /*pool*/) {}
 
     template <typename Data, typename Key>
     ALWAYS_INLINE EmplaceResult emplaceKeyImpl(Key key, Data & data, Arena & pool)
@@ -148,7 +156,7 @@ protected:
         {
             if (cache.found && cache.check(key))
             {
-                Derived::onExistingKey(cache.value.second, pool);
+                static_cast<Derived &>(*this).onExistingKey(key, pool);
 
                 if constexpr (has_mapped)
                     return EmplaceResult(cache.value.second, cache.value.second, false);
@@ -160,12 +168,20 @@ protected:
         typename Data::iterator it;
         bool inserted = false;
         data.emplace(key, it, inserted);
-        Mapped * cached = &it->second;
+
+        Mapped * cached = nullptr;
+        if (has_mapped)
+            cached = &it->second;
 
         if (inserted)
-            Derived::onNewKey(*it, pool);
+        {
+            if constexpr (has_mapped)
+                static_cast<Derived &>(*this).onNewKey(it->second, pool);
+            else
+                static_cast<Derived &>(*this).onNewKey(*it, pool);
+        }
         else
-            Derived::onExistingKey(*it, pool);
+            static_cast<Derived &>(*this).onExistingKey(key, pool);
 
         if constexpr (consecutive_keys_optimization)
         {

@@ -85,10 +85,10 @@ struct HashMethodString
     static StringRef getValueRef(const Value & value) { return StringRef(value.first.data, value.first.size); }
 
 protected:
-    static ALWAYS_INLINE void onNewKey(Value & value, Arena & pool)
+    static ALWAYS_INLINE void onNewKey(StringRef & key, Arena & pool)
     {
-        if (value.first.size)
-            value.first.data = pool.insert(value.first.data, value.first.size);
+        if (key.size)
+            key.data = pool.insert(key.data, key.size);
     }
 };
 
@@ -117,10 +117,7 @@ struct HashMethodFixedString
     static StringRef getValueRef(const Value & value) { return StringRef(value.first.data, value.first.size); }
 
 protected:
-    static ALWAYS_INLINE void onNewKey(Value & value, Arena & pool)
-    {
-        value.first.data = pool.insert(value.first.data, value.first.size);
-    }
+    static ALWAYS_INLINE void onNewKey(StringRef & key, Arena & pool) { key.data = pool.insert(key.data, key.size); }
 };
 
 
@@ -504,26 +501,13 @@ struct HashMethodSerialized
     HashMethodSerialized(const ColumnRawPtrs & key_columns, const Sizes & /*key_sizes*/, const HashMethodContextPtr &)
         : key_columns(key_columns), keys_size(key_columns.size()) {}
 
-    template <typename Data>
-    ALWAYS_INLINE size_t getHash(const Data & data, size_t row, Arena & pool)
-    {
-        auto key = getKey(row, pool);
-        auto hash = data.hash(key);
-        pool.rollback(key.size);
-
-        return hash;
-    }
-
 protected:
     ALWAYS_INLINE StringRef getKey(size_t row, Arena & pool) const
     {
         return serializeKeysToPoolContiguous(row, keys_size, key_columns, pool);
     }
 
-    static ALWAYS_INLINE void onExistingKey(Value & value, Arena & pool)
-    {
-        pool.rollback(value.first.size);
-    }
+    static ALWAYS_INLINE void onExistingKey(StringRef & key, Arena & pool) { pool.rollback(key.size); }
 };
 
 /// For the case where there is one string key.
