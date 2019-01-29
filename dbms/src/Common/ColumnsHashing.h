@@ -346,7 +346,12 @@ struct HashMethodSingleLowCardinalityColumn : public SingleColumnMethod
         visit_cache[row] = VisitValue::Found;
 
         if (inserted)
-            Base::onNewKey(*it, pool);
+        {
+            if constexpr (has_mapped)
+                Base::onNewKey(it->first, pool);
+            else
+                Base::onNewKey(*it, pool);
+        }
 
         if constexpr (has_mapped)
             return EmplaceResult(it->second, mapped_cache[row], inserted);
