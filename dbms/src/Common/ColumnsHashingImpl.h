@@ -96,13 +96,9 @@ public:
     bool isFound() const { return found; }
 };
 
-template <typename Derived>
+template <typename Derived, typename Value, typename Mapped, bool consecutive_keys_optimization>
 struct HashMethodBase
 {
-    using Value = typename Derived::value_type;
-    using Mapped = typename Derived::mapped_type;
-    static constexpr bool consecutive_keys_optimization = Derived::consecutive_keys_optimization;
-
     using EmplaceResult = EmplaceResultImpl<Mapped>;
     using FindResult = FindResultImpl<Mapped>;
     static constexpr bool has_mapped = !std::is_same<Mapped, void>::value;

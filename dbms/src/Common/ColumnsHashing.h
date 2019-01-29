@@ -23,13 +23,10 @@ namespace ColumnsHashing
 /// UInt8/16/32/64 for any type with corresponding bit width.
 template <typename Value, typename Mapped, typename FieldType, bool use_cache = true>
 struct HashMethodOneNumber
-    : public columns_hashing_impl::HashMethodBase<HashMethodOneNumber<Value, Mapped, FieldType, use_cache>>
+    : public columns_hashing_impl::HashMethodBase<HashMethodOneNumber<Value, Mapped, FieldType, use_cache>, Value, Mapped, use_cache>
 {
-    using value_type = Value;
-    using mapped_type = Mapped;
-    static constexpr bool consecutive_keys_optimization = use_cache;
     using Self = HashMethodOneNumber<Value, Mapped, FieldType, use_cache>;
-    using Base = columns_hashing_impl::HashMethodBase<Self>;
+    using Base = columns_hashing_impl::HashMethodBase<Self, Value, Mapped, use_cache>;
 
     const char * vec;
 
@@ -66,13 +63,11 @@ struct HashMethodOneNumber
 
 /// For the case where there is one string key.
 template <typename Value, typename Mapped, bool use_cache = true>
-struct HashMethodString : public columns_hashing_impl::HashMethodBase<HashMethodString<Value, Mapped, use_cache>>
+struct HashMethodString
+    : public columns_hashing_impl::HashMethodBase<HashMethodString<Value, Mapped, use_cache>, Value, Mapped, use_cache>
 {
-    using value_type = Value;
-    using mapped_type = Mapped;
-    static constexpr bool consecutive_keys_optimization = use_cache;
     using Self = HashMethodString<Value, Mapped, use_cache>;
-    using Base = columns_hashing_impl::HashMethodBase<Self>;
+    using Base = columns_hashing_impl::HashMethodBase<Self, Value, Mapped, use_cache>;
 
     const IColumn::Offset * offsets;
     const UInt8 * chars;
@@ -101,13 +96,10 @@ protected:
 /// For the case where there is one fixed-length string key.
 template <typename Value, typename Mapped, bool use_cache = true>
 struct HashMethodFixedString
-    : public columns_hashing_impl::HashMethodBase<HashMethodFixedString<Value, Mapped, use_cache>>
+    : public columns_hashing_impl::HashMethodBase<HashMethodFixedString<Value, Mapped, use_cache>, Value, Mapped, use_cache>
 {
-    using value_type = Value;
-    using mapped_type = Mapped;
-    static constexpr bool consecutive_keys_optimization = use_cache;
     using Self = HashMethodFixedString<Value, Mapped, use_cache>;
-    using Base = columns_hashing_impl::HashMethodBase<Self>;
+    using Base = columns_hashing_impl::HashMethodBase<Self, Value, Mapped, use_cache>;
 
     size_t n;
     const ColumnFixedString::Chars * chars;
@@ -439,13 +431,10 @@ struct LowCardinalityKeys<false> {};
 template <typename Value, typename Key, typename Mapped, bool has_nullable_keys_ = false, bool has_low_cardinality_ = false, bool use_cache = true>
 struct HashMethodKeysFixed
     : private columns_hashing_impl::BaseStateKeysFixed<Key, has_nullable_keys_>
-    , public columns_hashing_impl::HashMethodBase<HashMethodKeysFixed<Value, Key, Mapped, has_nullable_keys_, has_low_cardinality_, use_cache>>
+    , public columns_hashing_impl::HashMethodBase<HashMethodKeysFixed<Value, Key, Mapped, has_nullable_keys_, has_low_cardinality_, use_cache>, Value, Mapped, use_cache>
 {
-    using value_type = Value;
-    using mapped_type = Mapped;
-    static constexpr bool consecutive_keys_optimization = use_cache;
     using Self = HashMethodKeysFixed<Value, Key, Mapped, has_nullable_keys_, has_low_cardinality_, use_cache>;
-    using BaseHashed = columns_hashing_impl::HashMethodBase<Self>;
+    using BaseHashed = columns_hashing_impl::HashMethodBase<Self, Value, Mapped, use_cache>;
     using Base = columns_hashing_impl::BaseStateKeysFixed<Key, has_nullable_keys_>;
 
     static constexpr bool has_nullable_keys = has_nullable_keys_;
@@ -503,13 +492,11 @@ struct HashMethodKeysFixed
   * Therefore, when aggregating by several strings, there is no ambiguity.
   */
 template <typename Value, typename Mapped>
-struct HashMethodSerialized : public columns_hashing_impl::HashMethodBase<HashMethodSerialized<Value, Mapped>>
+struct HashMethodSerialized
+    : public columns_hashing_impl::HashMethodBase<HashMethodSerialized<Value, Mapped>, Value, Mapped, false>
 {
-    using value_type = Value;
-    using mapped_type = Mapped;
-    static constexpr bool consecutive_keys_optimization = false;
     using Self = HashMethodSerialized<Value, Mapped>;
-    using Base = columns_hashing_impl::HashMethodBase<Self>;
+    using Base = columns_hashing_impl::HashMethodBase<Self, Value, Mapped, false>;
 
     ColumnRawPtrs key_columns;
     size_t keys_size;
@@ -541,14 +528,12 @@ protected:
 
 /// For the case where there is one string key.
 template <typename Value, typename Mapped, bool use_cache = true>
-struct HashMethodHashed : public columns_hashing_impl::HashMethodBase<HashMethodHashed<Value, Mapped, use_cache>>
+struct HashMethodHashed
+    : public columns_hashing_impl::HashMethodBase<HashMethodHashed<Value, Mapped, use_cache>, Value, Mapped, use_cache>
 {
     using Key = UInt128;
-    using value_type = Value;
-    using mapped_type = Mapped;
-    static constexpr bool consecutive_keys_optimization = false;
     using Self = HashMethodHashed<Value, Mapped, use_cache>;
-    using Base = columns_hashing_impl::HashMethodBase<Self>;
+    using Base = columns_hashing_impl::HashMethodBase<Self, Value, Mapped, use_cache>;
 
     ColumnRawPtrs key_columns;
 
