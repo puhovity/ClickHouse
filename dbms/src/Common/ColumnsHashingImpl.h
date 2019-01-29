@@ -109,13 +109,13 @@ struct HashMethodBase
     template <typename Data>
     ALWAYS_INLINE EmplaceResult emplaceKey(Data & data, size_t row, Arena & pool)
     {
-        return emplaceKeyImpl(static_cast<Derived &>(*this).getKey(row), data, pool);
+        return emplaceKeyImpl(static_cast<Derived &>(*this).getKey(row, pool), data, pool);
     }
 
     template <typename Data>
     ALWAYS_INLINE FindResult findKey(Data & data, size_t row, Arena & pool)
     {
-        auto key = static_cast<Derived &>(*this).getKey(row);
+        auto key = static_cast<Derived &>(*this).getKey(row, pool);
         auto res = findKeyImpl(key, data);
         static_cast<Derived &>(*this).onExistingKey(key, pool);
         return res;
@@ -124,7 +124,7 @@ struct HashMethodBase
     template <typename Data>
     ALWAYS_INLINE size_t getHash(const Data & data, size_t row, Arena & pool)
     {
-        auto key = static_cast<Derived &>(*this).getKey(row);
+        auto key = static_cast<Derived &>(*this).getKey(row, pool);
         auto res = data.hash(key);
         static_cast<Derived &>(*this).onExistingKey(key, pool);
         return res;

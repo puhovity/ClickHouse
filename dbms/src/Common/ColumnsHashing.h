@@ -51,7 +51,7 @@ struct HashMethodOneNumber
     using Base::getHash; /// (const Data & data, size_t row, Arena & pool) -> size_t
 
     /// Is used for default implementation in HashMethodBase.
-    FieldType getKey(size_t row) const { return unalignedLoad<FieldType>(vec + row * sizeof(FieldType)); }
+    FieldType getKey(size_t row, Arena &) const { return unalignedLoad<FieldType>(vec + row * sizeof(FieldType)); }
 
     /// Get StringRef from value which can be inserted into column.
     static StringRef getValueRef(const Value & value)
@@ -80,7 +80,10 @@ struct HashMethodString
         chars = column_string.getChars().data();
     }
 
-    auto getKey(ssize_t row) const { return StringRef(chars + offsets[row - 1], offsets[row] - offsets[row - 1] - 1); }
+    auto getKey(ssize_t row, Arena &) const
+    {
+        return StringRef(chars + offsets[row - 1], offsets[row] - offsets[row - 1] - 1);
+    }
 
     static StringRef getValueRef(const Value & value) { return StringRef(value.first.data, value.first.size); }
 
@@ -112,7 +115,7 @@ struct HashMethodFixedString
         chars = &column_string.getChars();
     }
 
-    StringRef getKey(size_t row) const { return StringRef(&(*chars)[row * n], n); }
+    StringRef getKey(size_t row, Arena &) const { return StringRef(&(*chars)[row * n], n); }
 
     static StringRef getValueRef(const Value & value) { return StringRef(value.first.data, value.first.size); }
 
@@ -465,7 +468,7 @@ struct HashMethodKeysFixed
         Base::init(key_columns);
     }
 
-    ALWAYS_INLINE Key getKey(size_t row) const
+    ALWAYS_INLINE Key getKey(size_t row, Arena &) const
     {
         if (has_nullable_keys)
         {
@@ -502,6 +505,8 @@ struct HashMethodSerialized
         : key_columns(key_columns), keys_size(key_columns.size()) {}
 
 protected:
+    friend class columns_hashing_impl::HashMethodBase<Self, Value, Mapped, false>;
+
     ALWAYS_INLINE StringRef getKey(size_t row, Arena & pool) const
     {
         return serializeKeysToPoolContiguous(row, keys_size, key_columns, pool);
@@ -524,7 +529,7 @@ struct HashMethodHashed
     HashMethodHashed(ColumnRawPtrs key_columns, const Sizes &, const HashMethodContextPtr &)
         : key_columns(std::move(key_columns)) {}
 
-    UInt128 getKey(size_t row) const { return hash128(row, key_columns.size(), key_columns); }
+    UInt128 getKey(size_t row, Arena &) const { return hash128(row, key_columns.size(), key_columns); }
 
     static StringRef getValueRef(const Value & value)
     {
